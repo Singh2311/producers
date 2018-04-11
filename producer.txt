@@ -1,0 +1,80 @@
+#include<stdio.h>
+#include<semaphore.h>
+#include<pthread.h>
+#include<stdlib.h>
+#define buffersize 10
+pthread_mutex_t mutex;  //create pthread mutex
+pthread_t tidp[20],tidc[20]; //create an array of type pthread
+sem_t full,empty;  //declare two semaphore
+int n1,n2;  //declare two integer of taking input producer and consumer
+int counter=0;  //declare a integer counter variable
+int buffer[buffersize]; //declare an integer array buffer size is fix (5)
+
+
+void write(int item){
+	if(counter<buffersize){
+	buffer[counter++]=item;  //store the data to buffer
+	}
+	else{
+	printf("buffer overflow\n");
+}
+}
+int read()
+{
+if(counter>0){
+	return(buffer[--counter]); //read data at counter position and return it
+}
+else{
+printf("buffer underflow\n");
+}
+}
+void *producer(void *param){
+	int waittime,item;
+	item=rand()%5;
+	waittime=rand()%5;
+	sleep(waittime);
+	sem_wait(&empty); //semaphore waits to get empty
+	pthread_mutex_lock(&mutex);  //lock mutex
+	printf("\n procedure produced item: %d  \n",item);
+	write(item);  //writing the value in buffer
+	pthread_mutex_unlock(&mutex);  //unlock mutex
+	sem_post(&full);  //unlock thesemaphore refrenced by full
+
+}
+void *consumer(void *param)
+{
+	
+	int waittime,item;
+	waittime=rand()%5;
+	sleep(waittime);
+	sem_wait(&full); //semaphore waits to get full
+
+	pthread_mutex_lock(&mutex);  //lock mutex
+	item=read();  //read the value
+	printf("\n consumer has consumed item %d \n",item);
+	pthread_mutex_unlock(&mutex);  //unlock mutex
+	sem_post(&empty); //unlock the semaphore refrenced  by empty
+
+}
+int main(){
+	int i;
+	
+	pthread_mutex_init(&mutex,NULL);  //thread initialize to Null
+	sem_init(&full,1,0); //keep the track of number of full slots
+	sem_init(&empty,1,buffersize); //keep the track of number of empty slots
+	printf("\n enter no of procedure: ");
+	scanf("%d",&n1); //user to enter the number of producer
+	printf("\n enter no of consumer ");
+	scanf("%d",&n2); //user to enter the number of consumer
+	for(i=0;i<n1;i++) //start the loop for producer
+		pthread_create(&tidp[i],NULL,producer,NULL);
+	for(i=0;i<n2;i++)  //start the loop for consumer
+		pthread_create(&tidc[i],NULL,consumer,NULL);
+	for(i=0;i<n1;i++) //join the thread where it is left
+		pthread_join(tidp[i],NULL);
+	for(i=0;i<n2;i++)
+		pthread_join(tidc[i],NULL);
+
+	return 0;
+}
+		
